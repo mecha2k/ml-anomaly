@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import dateutil
 import sys
+import pickle
 
 from torch.utils.data import Dataset, DataLoader
 from pathlib import Path
@@ -12,8 +13,10 @@ from tqdm.notebook import trange
 from TaPR_pkg import etapr
 
 
-DATA_LENGTH = 20000
+DATA_LENGTH = 1000000
+MAKE_DATAFRAME = False
 MAKE_DATASET = False
+TRAIN = False
 
 TRAIN_DATASET = sorted([x for x in Path("../datasets/HAICon2021/train").glob("*.csv")])
 TEST_DATASET = sorted([x for x in Path("../datasets/HAICon2021/test").glob("*.csv")])
@@ -76,7 +79,7 @@ def make_train_df():
 
 
 train_path = Path("../datasets/HAICon2021/train")
-if not MAKE_DATASET:
+if not MAKE_DATAFRAME:
     TRAIN_DF = pd.read_pickle(train_path / "train_df.pkl")
     TRAIN_DF_RAW = pd.read_pickle(train_path / "train_df_raw.pkl")
 else:
@@ -150,15 +153,17 @@ class HaiDataset(Dataset):
 # 본 노트북에서는 학습을 빠르게 마치기 위해 10초씩 건너뛰면서 데이터를 추출하도록 했습니다.
 # (물론 슬라이딩 크기를 1로 설정하여 모든 데이터셋을 보게 하면 더 좋을 것입니다)
 
-HAI_DATASET_TRAIN = HaiDataset(TRAIN_DF_RAW[TIMESTAMP_FIELD], TRAIN_DF, stride=10)
-print(HAI_DATASET_TRAIN[0])
 
-
-# save dataset_train to file
-import pickle
-
-with open("dataset_train.pkl", "wb") as f:
-    pickle.dump(HAI_DATASET_TRAIN, f)
+dataset_path = Path("../datasets/HAICon2021/train") / "dataset_train.pkl"
+if MAKE_DATASET:
+    HAI_DATASET_TRAIN = HaiDataset(TRAIN_DF_RAW[TIMESTAMP_FIELD], TRAIN_DF, stride=10)
+    with open(dataset_path, "wb") as f:
+        pickle.dump(HAI_DATASET_TRAIN, f)
+    print(HAI_DATASET_TRAIN[0])
+else:
+    with open(dataset_path, "rb") as f:
+        HAI_DATASET_TRAIN = pickle.load(f)
+    print(f"dataset loaded : {len(HAI_DATASET_TRAIN)}")
 
 
 # 데이터셋이 잘 로드되는 것을 볼 수 있습니다.
@@ -231,37 +236,36 @@ def train(dataset, model, batch_size, n_epochs):
     return best, loss_history
 
 
-MODEL.train()
-BEST_MODEL, LOSS_HISTORY = train(HAI_DATASET_TRAIN, MODEL, BATCH_SIZE, 32)
-print(BEST_MODEL["loss"], BEST_MODEL["epoch"])
+model_path = Path("../saved/model.pt")
+image_path = Path("../saved/images")
 
-with open("../saved/model.pt", "wb") as f:
-    torch.save(
-        {
+if TRAIN:
+    MODEL.train()
+    BEST_MODEL, LOSS_HISTORY = train(HAI_DATASET_TRAIN, MODEL, BATCH_SIZE, 32)
+    print(BEST_MODEL["loss"], BEST_MODEL["epoch"])
+
+    with open(model_path, "wb") as f:
+        model_dict = {
             "state": BEST_MODEL["state"],
             "best_epoch": BEST_MODEL["epoch"],
             "loss_history": LOSS_HISTORY,
-        },
-        f,
-    )
+        }
+        torch.save(model_dict, f)
 
-# # ## 모델 불러오기
-# #
-# # 이미 학습된 모델 파라미터와 training loss 기록을 불러옵니다.
-#
-# with open("model.pt", "rb") as f:
-#     SAVED_MODEL = torch.load(f)
-#
-# MODEL.load_state_dict(SAVED_MODEL["state"])
-#
-# plt.figure(figsize=(16, 4))
-# plt.title("Training Loss Graph")
-# plt.xlabel("epochs")
-# plt.ylabel("loss")
-# plt.yscale("log")
-# plt.plot(SAVED_MODEL["loss_history"])
-# plt.show()
-#
+## 모델 불러오기
+with open(model_path, "rb") as f:
+    SAVED_MODEL = torch.load(f)
+
+MODEL.load_state_dict(SAVED_MODEL["state"])
+
+plt.figure(figsize=(16, 4))
+plt.title("Training Loss Graph")
+plt.xlabel("epochs")
+plt.ylabel("loss")
+plt.yscale("log")
+plt.plot(SAVED_MODEL["loss_history"])
+plt.savefig(image_path / "loss.png")
+
 # # ## 학습된 모델을 이용한 탐지
 # #
 # # 검증 데이터셋을 불러와서 모델에 입력으로 주고 예측값과 실제값의 차를 얻어봅니다.
