@@ -200,10 +200,16 @@ class StackedGRU(torch.nn.Module):
         return x[0] + out
 
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+elif torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+print(f"{device} is available in torch")
 
 MODEL = StackedGRU(n_tags=TRAIN_DF.shape[1])
-MODEL.cuda(device=device)
+MODEL.to(device=device)
 
 
 # ## 신규 모델 학습
@@ -223,9 +229,9 @@ def train(dataset, model, batch_size, n_epochs):
         epoch_loss = 0
         for batch in dataloader:
             optimizer.zero_grad()
-            given = batch["given"].cuda(device=device)
+            given = batch["given"].to(device=device)
             guess = model(given)
-            answer = batch["answer"].cuda(device=device)
+            answer = batch["answer"].to(device=device)
             loss = loss_fn(answer, guess)
             loss.backward()
             epoch_loss += loss.item()
@@ -315,8 +321,8 @@ def inference(dataset, model, batch_size):
     ts, dist, att = [], [], []
     with torch.no_grad():
         for batch in dataloader:
-            given = batch["given"].cuda(device=device)
-            answer = batch["answer"].cuda(device=device)
+            given = batch["given"].to(device=device)
+            answer = batch["answer"].to(device=device)
             guess = model(given)
             ts.append(np.array(batch["ts"]))
             dist.append(torch.abs(answer - guess).cpu().numpy())
