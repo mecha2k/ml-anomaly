@@ -13,7 +13,7 @@ from tqdm.notebook import trange
 from TaPR_pkg import etapr
 
 
-INIT_FLAG = False
+INIT_FLAG = True
 
 MAKE_DATAFRAME = INIT_FLAG
 MAKE_TRAIN_DATASET = INIT_FLAG

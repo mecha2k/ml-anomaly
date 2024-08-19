@@ -16,15 +16,15 @@ import pickle
 import sys
 import os
 
-epochs = 10
+epochs = 2
 batch_size = 2048
 
-stride = 100
+stride = 40
 window_size = 40
 window_given = 39
 threshold = 0.026
 
-load_from_file = True
+load_from_file = False
 
 LEAV_IDX = [
     11,
