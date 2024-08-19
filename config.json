@@ -3,7 +3,7 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "TimeSeriesDataset",
+        "type": "GRU_Linear",
         "args": {
             "n_hiddens": 150,
             "n_hiddens_2": 70,
@@ -13,6 +13,7 @@
     "data_loader": {
         "type": "TimeSeriesDataLoader",
         "args":{
+            "init_loader": false,
             "data_dir": "datasets/open",
             "batch_size": 128,
             "shuffle": false,

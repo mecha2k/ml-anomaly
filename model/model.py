@@ -20,3 +20,29 @@ class MnistModel(BaseModel):
         x = F.dropout(x, training=self.training)
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
+
+
+class GRU_Linear(nn.Module):
+    def __init__(self, n_tags=100, n_hiddens=150, n_hiddens_2=70, n_layers=3):
+        super().__init__()
+        self.gru = nn.GRU(
+            input_size=n_tags,
+            hidden_size=n_hiddens,
+            num_layers=n_layers,
+            bidirectional=True,
+            dropout=0.1,
+        )
+        self.fc = nn.Linear(n_hiddens * 2, n_hiddens_2)
+        self.dense = nn.Linear(n_hiddens_2, n_tags)
+        self.relu = nn.LeakyReLU(negative_slope=0.1)
+
+    def forward(self, input_sequence):
+        input_sequence = input_sequence.transpose(0, 1)
+        self.gru.flatten_parameters()
+        gru_outputs, _ = self.gru(input_sequence)
+        last_gru_output = gru_outputs[-1]
+        output = self.fc(last_gru_output)
+        output = self.relu(output)
+        output = self.dense(output)
+        output = torch.sigmoid(output)
+        return output
