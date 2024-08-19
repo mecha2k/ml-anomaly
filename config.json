@@ -1,19 +1,26 @@
 {
-    "name": "Mnist_LeNet",
+    "name": "LSTM_autoencoder",
     "n_gpu": 1,
 
     "arch": {
-        "type": "MnistModel",
-        "args": {}
+        "type": "TimeSeriesDataset",
+        "args": {
+            "n_hiddens": 150,
+            "n_hiddens_2": 70,
+            "n_layers": 3
+        }
     },
     "data_loader": {
-        "type": "MnistDataLoader",
+        "type": "TimeSeriesDataLoader",
         "args":{
             "data_dir": "datasets/open",
             "batch_size": 128,
-            "shuffle": true,
-            "validation_split": 0.1,
-            "num_workers": 2
+            "shuffle": false,
+            "validation_split": 0.0,
+            "num_workers": 1,
+            "window_size": 41,
+            "window_given": 40,
+            "stride": 10
         }
     },
     "optimizer": {
