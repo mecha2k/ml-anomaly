@@ -53,13 +53,13 @@ seed_everything()
 data_path = Path("../datasets/open")
 
 if load_from_pickle:
-    train_df_raw = pd.read_pickle(data_path / "train.pkl")
-    test_df_raw = pd.read_pickle(data_path / "test.pkl")
+    train_df_raw = pd.read_pickle(data_path / "train_raw.pkl")
+    test_df_raw = pd.read_pickle(data_path / "test_raw.pkl")
 else:
     train_df_raw = pd.read_csv(data_path / "train.csv")
-    train_df_raw.to_pickle(data_path / "train.pkl")
+    train_df_raw.to_pickle(data_path / "train_raw.pkl")
     test_df_raw = pd.read_csv(data_path / "test.csv")
-    test_df_raw.to_pickle(data_path / "test.pkl")
+    test_df_raw.to_pickle(data_path / "test_raw.pkl")
 
 
 def normalize_dataframe(train_df, test_df):
