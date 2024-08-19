@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from pathlib import Path
+import torch
+import pickle
 
 
 class TimeSeriesDataset(Dataset):
@@ -46,22 +48,10 @@ class TimeSeriesDataLoader(BaseDataLoader):
         training=True,
     ):
         self.data_dir = Path(data_dir)
-        self._init_dataloader(init_loader)
-        if training:
-            df_ts = self.train_df_raw["Timestamp"]
-            df = self.train_df
-        else:
-            df_ts = self.test_df_raw["Timestamp"]
-            df = self.test_df
-        self.dataset = TimeSeriesDataset(
-            df_ts,
-            df,
-            stride=stride,
-            window_size=window_size,
-            window_given=window_given,
-        )
+        self._init_dataloader(init_loader, stride, window_size, window_given)
+        self.dataset = self.train_dataset if training else self.test_dataset
+
         super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
-        print("-" * 50)
 
     @staticmethod
     def _check_dataframe(df, mode="train"):
@@ -71,12 +61,16 @@ class TimeSeriesDataLoader(BaseDataLoader):
         is_nan = np.any(np.isnan(x))
         print(f"Any {mode} data over 1.0: {over_1}, below 0: {below_0}, none: {is_nan}")
 
-    def _init_dataloader(self, init_loader):
+    def _init_dataloader(self, init_loader, stride, window_size, window_given):
         if not init_loader:
             self.train_df_raw = pd.read_pickle(self.data_dir / "train_raw.pkl")
             self.train_df = pd.read_pickle(self.data_dir / "train.pkl")
             self.test_df_raw = pd.read_pickle(self.data_dir / "test_raw.pkl")
             self.test_df = pd.read_pickle(self.data_dir / "test.pkl")
+            with open(self.data_dir / "train_dataset.pkl", "rb") as f:
+                self.train_dataset = pickle.load(f)
+            with open(self.data_dir / "test_dataset.pkl", "rb") as f:
+                self.test_dataset = pickle.load(f)
 
         else:
             self.train_df_raw = pd.read_csv(self.data_dir / "train.csv")
@@ -103,3 +97,22 @@ class TimeSeriesDataLoader(BaseDataLoader):
 
             self._check_dataframe(self.train_df, mode="train")
             self._check_dataframe(self.test_df, mode="test")
+
+            self.train_dataset = TimeSeriesDataset(
+                self.train_df_raw["Timestamp"],
+                self.train_df,
+                stride=stride,
+                window_size=window_size,
+                window_given=window_given,
+            )
+            self.test_dataset = TimeSeriesDataset(
+                self.test_df_raw["Timestamp"],
+                self.test_df,
+                stride=stride,
+                window_size=window_size,
+                window_given=window_given,
+            )
+            with open(self.data_dir / "train_dataset.pkl", "wb") as f:
+                pickle.dump(self.train_dataset, f)
+            with open(self.data_dir / "test_dataset.pkl", "wb") as f:
+                pickle.dump(self.test_dataset, f)
