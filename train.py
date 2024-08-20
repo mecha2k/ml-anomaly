@@ -25,6 +25,7 @@ def main(config):
     # setup data_loader instances
     data_loader = config.init_obj("data_loader", module_data)
     valid_data_loader = data_loader.split_validation()
+    # print(data_loader.train_df_raw["anomaly"].value_counts())
 
     # build model architecture, then print to console
     model = config.init_obj("arch", module_arch, n_tags=data_loader.train_df.shape[1])

@@ -18,3 +18,10 @@ def top_k_acc(output, target, k=3):
         for i in range(k):
             correct += torch.sum(pred[:, i] == target).item()
     return correct / len(target)
+
+
+def distances(output, target):
+    with torch.no_grad():
+        assert output.shape == target.shape
+        dist = torch.abs(output - target).cpu().numpy().mean(axis=1)
+    return dist.mean()

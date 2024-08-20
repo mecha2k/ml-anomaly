@@ -1,6 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 from base import BaseModel
+import torch
 
 
 class MnistModel(BaseModel):
@@ -44,5 +45,4 @@ class GRU_Linear(nn.Module):
         output = self.fc(last_gru_output)
         output = self.relu(output)
         output = self.dense(output)
-        output = torch.sigmoid(output)
-        return output
+        return torch.sigmoid(output)

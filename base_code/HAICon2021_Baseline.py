@@ -23,9 +23,7 @@ TRAIN = INIT_FLAG
 
 TRAIN_DATASET = sorted([x for x in Path("../datasets/HAICon2021/train").glob("*.csv")])
 TEST_DATASET = sorted([x for x in Path("../datasets/HAICon2021/test").glob("*.csv")])
-VALIDATION_DATASET = sorted(
-    [x for x in Path("../datasets/HAICon2021/validation").glob("*.csv")]
-)
+VALIDATION_DATASET = sorted([x for x in Path("../datasets/HAICon2021/validation").glob("*.csv")])
 
 
 TIMESTAMP_FIELD = "timestamp"
@@ -74,9 +72,7 @@ TAG_MAX = TRAIN_DF_RAW[VALID_COLUMNS_IN_TRAIN_DATASET].max()
 def make_train_df():
     # TRAIN_DF는 정규화를 마친 후 exponential weighted function을 통과시킨 결과입니다.
     # 센서에서 발생하는 noise를 smoothing 시켜주기를 기대하고 적용했습니다.
-    TRAIN_DF = (
-        normalize(TRAIN_DF_RAW[VALID_COLUMNS_IN_TRAIN_DATASET]).ewm(alpha=0.9).mean()
-    )
+    TRAIN_DF = normalize(TRAIN_DF_RAW[VALID_COLUMNS_IN_TRAIN_DATASET]).ewm(alpha=0.9).mean()
     print(TRAIN_DF.describe())
     # 1보다 큰 값, 0보다 작은 값, not a number가 없습니다. 정규화가 정상적으로 처리되었습니다.
     print(boundary_check(TRAIN_DF))
@@ -119,11 +115,13 @@ class HaiDataset(Dataset):
         self.ts = np.array(timestamps)
         self.tag_values = np.array(df, dtype=np.float32)
         self.valid_idxs = []
+        # L 1, 100 ts 9461
         for L in trange(len(self.ts) - WINDOW_SIZE + 1):
             R = L + WINDOW_SIZE - 1
-            if dateutil.parser.parse(self.ts[R]) - dateutil.parser.parse(
-                self.ts[L]
-            ) == timedelta(seconds=WINDOW_SIZE - 1):
+            # 60 - 1 = 59, 이게 윈도우사이즈 크기와 동일한지 점검하는 조건
+            if dateutil.parser.parse(self.ts[R]) - dateutil.parser.parse(self.ts[L]) == timedelta(
+                seconds=WINDOW_SIZE - 1
+            ):
                 self.valid_idxs.append(L)
         self.valid_idxs = np.array(self.valid_idxs, dtype=np.int32)[::stride]
         self.n_idxs = len(self.valid_idxs)
@@ -369,9 +367,7 @@ def check_graph(xs, att, piece=2, THRESHOLD=None, name="default"):
 
 
 THRESHOLD = 0.026
-check_graph(
-    ANOMALY_SCORE, CHECK_ATT, piece=5, THRESHOLD=THRESHOLD, name="anomaly_score"
-)
+check_graph(ANOMALY_SCORE, CHECK_ATT, piece=5, THRESHOLD=THRESHOLD, name="anomaly_score")
 
 
 # 주황색 선은 공격 위치를 나타내고, 파란색 선은 (평균) 오차의 크기를 나타냅니다.
@@ -433,9 +429,7 @@ def fill_blank(check_ts, labels, total_ts):
         return np.array(final_labels, dtype=np.int8)
 
 
-FINAL_LABELS = fill_blank(
-    CHECK_TS, LABELS, np.array(VALIDATION_DF_RAW[TIMESTAMP_FIELD])
-)
+FINAL_LABELS = fill_blank(CHECK_TS, LABELS, np.array(VALIDATION_DF_RAW[TIMESTAMP_FIELD]))
 print(FINAL_LABELS.shape)
 
 # ## 평가
@@ -451,9 +445,7 @@ print(f"Detected anomalies: {TaPR['Detected_Anomalies']}")
 test_path = Path("../datasets/HAICon2021/test")
 if MAKE_DATAFRAME:
     TEST_DF_RAW = dataframe_from_csvs(TEST_DATASET)
-    TEST_DF = (
-        normalize(TEST_DF_RAW[VALID_COLUMNS_IN_TRAIN_DATASET]).ewm(alpha=0.9).mean()
-    )
+    TEST_DF = normalize(TEST_DF_RAW[VALID_COLUMNS_IN_TRAIN_DATASET]).ewm(alpha=0.9).mean()
     boundary_check(TEST_DF)
     TEST_DF.to_pickle(test_path / "test_df.pkl")
     TEST_DF_RAW.to_pickle(test_path / "test_df_raw.pkl")
@@ -483,9 +475,7 @@ CHECK_TS, CHECK_DIST, CHECK_ATT = inference(HAI_DATASET_TEST, MODEL, BATCH_SIZE)
 ANOMALY_SCORE = np.mean(CHECK_DIST, axis=1)
 
 # 결과를 눈으로 확인하기 위해 그래프를 그려보겠습니다.
-check_graph(
-    ANOMALY_SCORE, CHECK_ATT, piece=5, THRESHOLD=THRESHOLD, name="anomaly_score_test"
-)
+check_graph(ANOMALY_SCORE, CHECK_ATT, piece=5, THRESHOLD=THRESHOLD, name="anomaly_score_test")
 
 # 검증 데이터셋을 이용해 찾은 threshold를 이용해 공격 여부를 예측합니다.
 LABELS = put_labels(ANOMALY_SCORE, THRESHOLD)
