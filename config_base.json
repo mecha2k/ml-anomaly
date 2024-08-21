@@ -3,9 +3,10 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "StackedLSTM",
+        "type": "GRU_Linear",
         "args": {
-            "n_hiddens": 200,
+            "n_hiddens": 150,
+            "n_hiddens_2": 70,
             "n_layers": 3
         }
     },

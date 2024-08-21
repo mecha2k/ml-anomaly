@@ -316,6 +316,9 @@ if __name__ == "__main__":
     train_df_raw = dataframe_from_csvs(train_file)
     valid_df_raw = dataframe_from_csvs(valid_file)
     test_df_raw = dataframe_from_csvs(test_file)
+    train_df_raw = train_df_raw[:10000]
+    valid_df_raw = valid_df_raw[:1000]
+    test_df_raw = test_df_raw[:1000]
     print(train_df_raw.describe())
 
     timestamp = "timestamp"
