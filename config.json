@@ -15,13 +15,13 @@
         "args":{
             "init_loader": false,
             "data_dir": "datasets/open",
-            "batch_size": 128,
+            "batch_size": 256,
             "shuffle": false,
             "validation_split": 0.0,
             "num_workers": 1,
             "window_size": 41,
             "window_given": 40,
-            "stride": 10
+            "stride": 100
         }
     },
     "optimizer": {
@@ -33,9 +33,7 @@
         }
     },
     "loss": "mse_loss",
-    "metrics": [
-        "distances"
-    ],
+    "metrics": ["distance"],
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
@@ -50,8 +48,8 @@
         "save_period": 1,
         "verbosity": 2,
         
-        "monitor": "min val_loss",
-        "early_stop": 10,
+        "monitor": "min distance",
+        "early_stop": 100,
 
         "tensorboard": true
     }

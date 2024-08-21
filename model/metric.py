@@ -20,7 +20,7 @@ def top_k_acc(output, target, k=3):
     return correct / len(target)
 
 
-def distances(output, target):
+def distance(output, target):
     with torch.no_grad():
         assert output.shape == target.shape
         dist = torch.abs(output - target).cpu().numpy().mean(axis=1)
