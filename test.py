@@ -20,7 +20,6 @@ def get_data_loader(training=True):
         shuffle=True if training else False,
         validation_split=0.0,
         training=training,
-        num_workers=1,
         window_size=config["data_loader"]["args"]["window_size"],
         window_given=config["data_loader"]["args"]["window_given"],
         stride=config["data_loader"]["args"]["stride"],
