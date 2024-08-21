@@ -40,7 +40,6 @@ class TimeSeriesDataLoader(BaseDataLoader):
         batch_size,
         shuffle=True,
         validation_split=0.0,
-        num_workers=1,
         window_size=41,
         window_given=40,
         stride=10,
@@ -51,7 +50,7 @@ class TimeSeriesDataLoader(BaseDataLoader):
         self._init_dataloader(init_loader, stride, window_size, window_given)
         self.dataset = self.train_dataset if training else self.test_dataset
 
-        super().__init__(self.dataset, batch_size, shuffle, validation_split, num_workers)
+        super().__init__(self.dataset, batch_size, shuffle, validation_split)
 
     @staticmethod
     def _check_dataframe(df, mode="train"):
