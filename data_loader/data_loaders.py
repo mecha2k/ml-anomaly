@@ -77,10 +77,13 @@ class TimeSeriesDataLoader(BaseDataLoader):
 
             columns_target = self.train_df_raw.columns.drop(["Timestamp", "anomaly"])
             train_df = self.train_df_raw[columns_target].astype(float)
+
             scaler = MinMaxScaler().fit(train_df)
             train_ls = scaler.transform(train_df)
-            self.train_df = pd.DataFrame(
-                train_ls, columns=train_df.columns, index=list(train_df.index.values)
+            self.train_df = (
+                pd.DataFrame(train_ls, columns=train_df.columns, index=list(train_df.index.values))
+                .ewm(alpha=0.9)
+                .mean()
             )
             self.train_df.to_pickle(self.data_dir / "train.pkl")
 
@@ -89,8 +92,10 @@ class TimeSeriesDataLoader(BaseDataLoader):
 
             test_df = self.test_df_raw[columns_target].astype(float)
             test_ls = scaler.transform(test_df)
-            self.test_df = pd.DataFrame(
-                test_ls, columns=test_df.columns, index=list(test_df.index.values)
+            self.test_df = (
+                pd.DataFrame(test_ls, columns=test_df.columns, index=list(test_df.index.values))
+                .ewm(alpha=0.9)
+                .mean()
             )
             self.test_df.to_pickle(self.data_dir / "test.pkl")
 
