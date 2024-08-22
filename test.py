@@ -13,7 +13,7 @@ from utils import prepare_device
 from submissions import final_submission
 
 
-def get_data_loader(training=True):
+def get_data_loader(config, training=True):
     return getattr(module_data, config["data_loader"]["type"])(
         config["data_loader"]["args"]["data_dir"],
         batch_size=config["data_loader"]["args"]["batch_size"],
@@ -31,8 +31,8 @@ def main(config):
     logger = config.get_logger("test")
 
     # setup data_loader instances
-    train_loader = get_data_loader(training=True)
-    test_loader = get_data_loader(training=False)
+    train_loader = get_data_loader(config, training=True)
+    test_loader = get_data_loader(config, training=False)
 
     # build model architecture
     model = config.init_obj("arch", module_arch, n_tags=train_loader.train_df.shape[1])

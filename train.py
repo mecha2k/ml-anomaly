@@ -25,11 +25,10 @@ def main(config):
     # setup data_loader instances
     data_loader = config.init_obj("data_loader", module_data)
     valid_data_loader = data_loader.split_validation()
-    # print(data_loader.train_df_raw["anomaly"].value_counts())
 
     # build model architecture, then print to console
-    model = config.init_obj("arch", module_arch)
-    # model = config.init_obj("arch", module_arch, n_tags=data_loader.train_df.shape[1])
+    # model = config.init_obj("arch", module_arch)
+    model = config.init_obj("arch", module_arch, n_tags=data_loader.train_df.shape[1])
     logger.info(model)
 
     # prepare for (multi-device) GPU training
@@ -37,9 +36,6 @@ def main(config):
     model = model.to(device)
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
-
-    # inputs = torch.rand((256, 40, 51), dtype=torch.float32, device=device)
-    # outputs = model(inputs)
 
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config["loss"])
@@ -63,6 +59,8 @@ def main(config):
     )
 
     trainer.train()
+
+    return trainer.checkpoint_dir / "model_best.pth"
 
 
 if __name__ == "__main__":
