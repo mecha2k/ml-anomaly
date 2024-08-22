@@ -1,8 +1,27 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import torch
 import datetime
 from tqdm import tqdm
+from pathlib import Path
+
+
+def check_graph(xs, att, piece=2, threshold=None, name="default"):
+    l = xs.shape[0]
+    chunk = l // piece
+    fig, axs = plt.subplots(piece, figsize=(20, 4 * piece))
+    for i in range(piece):
+        L = i * chunk
+        R = min(L + chunk, l)
+        xticks = range(L, R)
+        axs[i].plot(xticks, xs[L:R])
+        if len(xs[L:R]) > 0:
+            peak = max(xs[L:R])
+            axs[i].plot(xticks, att[L:R] * peak)
+        if threshold is not None:
+            axs[i].axhline(y=threshold, color="r")
+    plt.savefig(name)
 
 
 def inference(model, data_loader, device="cuda"):
@@ -59,6 +78,10 @@ def fill_blank(check_ts, labels, total_ts):
 def final_submission(model, data_loader, threshold, device, data_path):
     timestamps, distances = inference(model, data_loader, device=device)
     anomaly_score = np.mean(distances, axis=1)
+    attacks = np.zeros_like(anomaly_score)
+    check_graph(
+        anomaly_score, attacks, piece=2, threshold=threshold, name=data_path / "test_anomaly"
+    )
 
     labels = put_labels(anomaly_score, threshold)
     prediction = fill_blank(timestamps, labels, np.array(data_loader.test_df_raw["Timestamp"]))

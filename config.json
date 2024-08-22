@@ -1,12 +1,11 @@
 {
-    "name": "LSTM_autoencoder",
+    "name": "StackedLSTM",
     "n_gpu": 1,
 
     "arch": {
-        "type": "GRU_Linear",
+        "type": "StackedLSTM",
         "args": {
-            "n_hiddens": 150,
-            "n_hiddens_2": 70,
+            "n_hiddens": 200,
             "n_layers": 3
         }
     },

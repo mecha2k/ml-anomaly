@@ -35,7 +35,7 @@ def main(config):
     test_loader = get_data_loader(config, training=False)
 
     # build model architecture
-    model = config.init_obj("arch", module_arch, n_tags=train_loader.train_df.shape[1])
+    model = config.init_obj("arch", module_arch, input_size=train_loader.train_df.shape[1])
     logger.info(model)
 
     # get function handles of loss and metrics

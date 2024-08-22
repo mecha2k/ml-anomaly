@@ -24,17 +24,17 @@ class MnistModel(BaseModel):
 
 
 class GRU_Linear(BaseModel):
-    def __init__(self, n_tags=100, n_hiddens=150, n_hiddens_2=70, n_layers=3):
+    def __init__(self, input_size=100, n_hiddens=150, n_hiddens_2=70, n_layers=3):
         super().__init__()
         self.gru = nn.GRU(
-            input_size=n_tags,
+            input_size=input_size,
             hidden_size=n_hiddens,
             num_layers=n_layers,
             bidirectional=True,
             dropout=0.1,
         )
         self.fc = nn.Linear(n_hiddens * 2, n_hiddens_2)
-        self.dense = nn.Linear(n_hiddens_2, n_tags)
+        self.dense = nn.Linear(n_hiddens_2, input_size)
         self.relu = nn.LeakyReLU(negative_slope=0.1)
 
     def forward(self, input_sequence):
@@ -49,16 +49,16 @@ class GRU_Linear(BaseModel):
 
 
 class StackedLSTM(BaseModel):
-    def __init__(self, n_hiddens, n_layers):
+    def __init__(self, input_size, n_hiddens, n_layers):
         super().__init__()
         self.rnn = torch.nn.LSTM(
-            input_size=24,
+            input_size=input_size,
             hidden_size=n_hiddens,
             num_layers=n_layers,
             bidirectional=True,
             dropout=0.1,
         )
-        self.fc = torch.nn.Linear(n_hiddens * 2, 24)
+        self.fc = torch.nn.Linear(n_hiddens * 2, input_size)
         self.relu = torch.nn.LeakyReLU(0.1)
 
         # mix up을 적용하기 위해서 learnable parameter인 w를 설정합니다.
@@ -69,11 +69,10 @@ class StackedLSTM(BaseModel):
         self.sigmoid = torch.nn.Sigmoid()
 
         # feature attention을 위한 dense layer를 설정합니다.
-        self.dense1 = torch.nn.Linear(24, 12)
-        self.dense2 = torch.nn.Linear(12, 24)
+        self.dense1 = torch.nn.Linear(input_size, input_size // 2)
+        self.dense2 = torch.nn.Linear(input_size // 2, input_size)
 
     def forward(self, x):
-        x = x[:, :, :]  # batch, window_size, params
         # x = x[:, :, LEAV_IDX]  # batch, window_size, params
 
         pool = torch.nn.AdaptiveAvgPool1d(1)
@@ -84,7 +83,7 @@ class StackedLSTM(BaseModel):
         attention = pool(attention_x)  # batch, params, 1
 
         connection = attention  # 이전 정보를 저장하고 있습니다.
-        connection = connection.reshape(-1, 24)  # batch, params
+        connection = connection.reshape(-1, x.shape[-1])  # batch, params
 
         # feature attention을 적용합니다.
         attention = self.relu(torch.squeeze(attention))
@@ -98,6 +97,8 @@ class StackedLSTM(BaseModel):
         outs, _ = self.rnn(x)
         out = self.fc(self.relu(outs[-1]))  # 이전 대회 코드를 보고 leaky relu를 추가했습니다.
 
-        mix_factor = self.sigmoid(self.w)  # w의 값을 비율로 만들어 주기 위해서 sigmoid를 적용합니다.
+        mix_factor = self.sigmoid(
+            self.w
+        )  # w의 값을 비율로 만들어 주기 위해서 sigmoid를 적용합니다.
 
         return mix_factor * connection * attention + out * (1 - mix_factor)  # 이전 정보
