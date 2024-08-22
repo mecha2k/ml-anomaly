@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import torch
 import datetime
 import pickle
+from scipy import stats
 from tqdm import tqdm
 from pathlib import Path
 
@@ -112,4 +113,82 @@ if __name__ == "__main__":
     plt.hist(anomaly_score, bins=100, density=True, range=(0.26, 0.28))
     plt.legend(["Anomaly score"])
     plt.grid()
-    plt.savefig("saved/images/anomaly_hist.png")
+    plt.savefig("saved/images/anomaly_hist")
+
+    # Generate sample data
+    np.random.seed(42)
+    data = np.concatenate(
+        [np.random.normal(0, 1, 1000), np.random.normal(6, 1, 20)]  # Adding some outliers
+    )
+
+    # Compute KDE
+    kde = stats.gaussian_kde(data)
+
+    # Calculate the probability density for each point
+    density = kde(data)
+
+    # Define the threshold for outliers (e.g., bottom 1% of density)
+    threshold = np.percentile(density, 5)
+
+    # Identify outliers
+    outliers = data[density < threshold]
+
+    # Plotting
+    plt.figure(figsize=(12, 6))
+
+    # Plot the KDE
+    x_range = np.linspace(data.min(), data.max(), 1000)
+    plt.plot(x_range, kde(x_range), label="KDE")
+
+    # Plot the data points
+    plt.scatter(data, np.zeros_like(data), alpha=0.5, s=100, label="Data points")
+
+    # Highlight outliers
+    plt.scatter(outliers, np.zeros_like(outliers), color="red", s=30, label="Outliers")
+
+    plt.title("Outlier Detection using KDE")
+    plt.xlabel("Value")
+    plt.ylabel("Density")
+    plt.legend()
+    plt.savefig("saved/images/kde_outliers")
+
+    print(f"Number of outliers detected: {len(outliers)}")
+    print(f"Threshold : {threshold}")
+
+    # # Generate 1D data with outliers (for demonstration)
+    # np.random.seed(0)  # For reproducibility
+    # data = np.concatenate(
+    #     (
+    #         np.random.normal(loc=5, scale=2, size=100),
+    #         [50],  # An outlier at position 50
+    #         np.random.normal(loc=10, scale=1.5, size=200),
+    #     )
+    # )
+    #
+    # # Sort the data for easier KDE calculation and plotting
+    # data.sort()
+    #
+    # # Calculate KDE density
+    # x = np.linspace(min(data), max(data), 1000)
+    # kde = stats.gaussian_kde(data)
+    # density = kde(x)
+    #
+    # # Plot KDE distribution with original data points overlaid
+    # plt.figure(figsize=(10, 6))
+    # plt.plot(x, density, label="KDE Density")
+    # plt.scatter(
+    #     data, [1] * len(data), c="red", alpha=0.5, label="Data Points"
+    # )  # Use a placeholder value to make scatter visible
+    # plt.xlabel("Value")
+    # plt.ylabel("Density")
+    # plt.legend()
+    # plt.title("Kernel Density Estimate of Data with Outlier")
+    # plt.savefig("saved/images/kernel_density")
+    #
+    # # Define and calculate the threshold based on density at data points (adjust as necessary)
+    # threshold = np.percentile(density, 95)
+    # # This might need adjustment based on actual dataset characteristics
+    #
+    # # Identify outliers by comparing to the calculated KDE density
+    # outliers = [x for x, d in zip(data, density) if d < threshold]
+    # print("Outliers:", outliers)
