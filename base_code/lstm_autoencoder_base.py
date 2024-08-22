@@ -275,5 +275,5 @@ prediction = prediction.flatten().tolist()
 
 sample_submission = pd.read_csv(data_path / "sample_submission.csv")
 sample_submission["anomaly"] = prediction
-sample_submission.to_csv(data_path / "final_submission.csv", encoding="UTF-8-sig", index=False)
+sample_submission.to_csv(data_path / "final_submission_025.csv", encoding="UTF-8-sig", index=False)
 print(sample_submission["anomaly"].value_counts())

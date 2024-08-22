@@ -89,7 +89,7 @@ def final_submission(model, data_loader, threshold, device, data_path):
         }
         pickle.dump(data_dict, f)
 
-    threshold = 0.3
+    threshold = 0.268
     check_graph(
         anomaly_score, attacks, piece=2, threshold=threshold, name=data_path / "test_anomaly"
     )
@@ -102,3 +102,14 @@ def final_submission(model, data_loader, threshold, device, data_path):
     sample_submission["anomaly"] = prediction
     sample_submission.to_csv(data_path / "final_submission.csv", encoding="UTF-8-sig", index=False)
     print(sample_submission["anomaly"].value_counts())
+
+
+if __name__ == "__main__":
+    with open("datasets/open/test_anomaly.pkl", "rb") as f:
+        data_dict = pickle.load(f)
+
+    anomaly_score = data_dict["anomaly_score"]
+    plt.hist(anomaly_score, bins=100, density=True, range=(0.26, 0.28))
+    plt.legend(["Anomaly score"])
+    plt.grid()
+    plt.savefig("saved/images/anomaly_hist.png")
