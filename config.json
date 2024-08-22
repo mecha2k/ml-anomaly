@@ -12,14 +12,14 @@
     "data_loader": {
         "type": "TimeSeriesDataLoader",
         "args":{
-            "init_loader": true,
+            "init_loader": false,
             "data_dir": "datasets/open",
             "batch_size": 256,
             "shuffle": false,
             "validation_split": 0.0,
-            "window_size": 41,
-            "window_given": 40,
-            "stride": 100
+            "window_size": 61,
+            "window_given": 60,
+            "stride": 1
         }
     },
     "optimizer": {
@@ -40,10 +40,10 @@
         }
     },
     "trainer": {
-        "epochs": 1,
+        "epochs": 10,
 
         "save_dir": "saved/",
-        "save_period": 1,
+        "save_period": 2,
         "verbosity": 2,
 
         "monitor": "min losses",

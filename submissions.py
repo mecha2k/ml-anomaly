@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import torch
 import datetime
+import pickle
 from tqdm import tqdm
 from pathlib import Path
 
@@ -79,6 +80,16 @@ def final_submission(model, data_loader, threshold, device, data_path):
     timestamps, distances = inference(model, data_loader, device=device)
     anomaly_score = np.mean(distances, axis=1)
     attacks = np.zeros_like(anomaly_score)
+
+    with open(data_path / "test_anomaly.pkl", "wb") as f:
+        data_dict = {
+            "timestamps": timestamps,
+            "anomaly_score": anomaly_score,
+            "attacks": attacks,
+        }
+        pickle.dump(data_dict, f)
+
+    threshold = 0.3
     check_graph(
         anomaly_score, attacks, piece=2, threshold=threshold, name=data_path / "test_anomaly"
     )
