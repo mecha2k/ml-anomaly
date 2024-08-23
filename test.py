@@ -54,17 +54,6 @@ def main(config):
     model = model.to(device)
     model.eval()
 
-    train_errors = []
-    with torch.no_grad():
-        for batch in train_loader:
-            inputs = batch["input"].to(device)
-            targets = batch["target"].to(device)
-            outputs = model(inputs)
-            errors = torch.mean(torch.abs(targets - outputs), dim=1).cpu().numpy()
-            train_errors.extend(errors)
-    threshold = np.mean(train_errors) + 2 * np.std(train_errors)
-    print(f"Threshold based on training data : {threshold}")
-
     total_loss = 0.0
     total_metrics = torch.zeros(len(metric_fns))
     with torch.no_grad():
@@ -86,7 +75,7 @@ def main(config):
     logger.info(log)
 
     data_path = Path(config["data_loader"]["args"]["data_dir"])
-    final_submission(model, test_loader, threshold, device, data_path)
+    final_submission(model, test_loader, device, data_path)
 
 
 if __name__ == "__main__":

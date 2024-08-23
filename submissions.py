@@ -17,6 +17,7 @@ def check_graph(xs, att, piece=2, threshold=None, name="default"):
         L = i * chunk
         R = min(L + chunk, l)
         xticks = range(L, R)
+        axs[i].set_ylim(0, 0.3)
         axs[i].plot(xticks, xs[L:R])
         if len(xs[L:R]) > 0:
             peak = max(xs[L:R])
@@ -77,7 +78,13 @@ def fill_blank(check_ts, labels, total_ts):
     return np.array(final_labels, dtype=np.int8)
 
 
-def final_submission(model, data_loader, threshold, device, data_path):
+def get_threshold(anomaly_score, percentile):
+    anomaly_score = anomaly_score[anomaly_score < 1]
+    threshold = np.percentile(anomaly_score, percentile)
+    return threshold
+
+
+def final_submission(model, data_loader, device, data_path):
     timestamps, distances = inference(model, data_loader, device=device)
     anomaly_score = np.mean(distances, axis=1)
     attacks = np.zeros_like(anomaly_score)
@@ -90,7 +97,8 @@ def final_submission(model, data_loader, threshold, device, data_path):
         }
         pickle.dump(data_dict, f)
 
-    threshold = 0.268
+    threshold = get_threshold(anomaly_score, percentile=95)
+    print(f"95% percentile based Threshold: {threshold}")
     check_graph(
         anomaly_score, attacks, piece=2, threshold=threshold, name=data_path / "test_anomaly"
     )
@@ -110,69 +118,44 @@ if __name__ == "__main__":
         data_dict = pickle.load(f)
 
     anomaly_score = data_dict["anomaly_score"]
-    plt.hist(anomaly_score, bins=100, density=True, range=(0.26, 0.28))
+    threshold = get_threshold(anomaly_score, percentile=95)
+
+    # anomaly_sampled = np.random.choice(anomaly_score, size=500, replace=False)
+    # kde = stats.gaussian_kde(anomaly_sampled)
+    # density = kde(anomaly_score)
+    # # 10% percentile of the density is the threshold
+    # # data below 10% diff. between pred. and target are normal
+    # threshold = np.percentile(density, 10)
+    # outliers = anomaly_score[density < threshold]
+
+    # plt.figure(figsize=(12, 6))
+    # x_range = np.linspace(0, 1, 1000)
+    # plt.plot(x_range, kde(x_range), label="KDE")
+    # plt.scatter(anomaly_score, np.zeros_like(anomaly_score), alpha=0.5, s=100, label="Data points")
+    # plt.scatter(outliers, np.zeros_like(outliers), color="red", s=30, label="Outliers")
+    # plt.axhline(y=threshold, color="r", label="Density Based Threshold")
+    # plt.title("Outlier Detection using KDE")
+    # plt.xlabel("Value")
+    # plt.ylabel("Density")
+    # plt.grid()
+    # plt.legend()
+    # plt.savefig("saved/images/kde_outliers")
+
+    print(f"95% percentile based Threshold: {threshold}")
+    check_graph(
+        anomaly_score,
+        np.zeros_like(anomaly_score),
+        piece=2,
+        threshold=threshold,
+        name="saved/images/test_anomaly",
+    )
+
+    amin = np.percentile(anomaly_score, 5)
+    amax = np.percentile(anomaly_score, 95)
+    plt.hist(anomaly_score, bins=100, density=True, range=(amin, amax + 0.1))
     plt.legend(["Anomaly score"])
     plt.grid()
     plt.savefig("saved/images/anomaly_hist")
 
-    anomaly_sampled = np.random.choice(anomaly_score, size=10000, replace=False)
-
-    kde = stats.gaussian_kde(anomaly_sampled)
-    density = kde(anomaly_score)
-    threshold = np.percentile(density, 10)
-    outliers = anomaly_score[density < threshold]
-
-    plt.figure(figsize=(12, 6))
-    x_range = np.linspace(anomaly_score.min(), anomaly_score.max(), 1000)
-    plt.plot(x_range, kde(x_range), label="KDE")
-    plt.scatter(anomaly_score, np.zeros_like(anomaly_score), alpha=0.5, s=100, label="Data points")
-    plt.scatter(outliers, np.zeros_like(outliers), color="red", s=30, label="Outliers")
-    plt.title("Outlier Detection using KDE")
-    plt.xlabel("Value")
-    plt.ylabel("Density")
-    plt.legend()
-    plt.savefig("saved/images/kde_outliers")
-
-    print(f"Number of outliers detected: {len(outliers)}")
-    print(f"Portion of outliers (%) : {len(outliers) / len(anomaly_score):.2f}%")
-    print(f"Threshold : {threshold:.5f}")
-
-    # # Generate sample data
-    # np.random.seed(42)
-    # data = np.concatenate(
-    #     [np.random.normal(0, 1, 1000), np.random.normal(6, 1, 20)]  # Adding some outliers
-    # )
-    #
-    # # Compute KDE
-    # kde = stats.gaussian_kde(data)
-    #
-    # # Calculate the probability density for each point
-    # density = kde(data)
-    #
-    # # Define the threshold for outliers (e.g., bottom 1% of density)
-    # threshold = np.percentile(density, 5)
-    #
-    # # Identify outliers
-    # outliers = data[density < threshold]
-    #
-    # # Plotting
-    # plt.figure(figsize=(12, 6))
-    #
-    # # Plot the KDE
-    # x_range = np.linspace(data.min(), data.max(), 1000)
-    # plt.plot(x_range, kde(x_range), label="KDE")
-    #
-    # # Plot the data points
-    # plt.scatter(data, np.zeros_like(data), alpha=0.5, s=100, label="Data points")
-    #
-    # # Highlight outliers
-    # plt.scatter(outliers, np.zeros_like(outliers), color="red", s=30, label="Outliers")
-    #
-    # plt.title("Outlier Detection using KDE")
-    # plt.xlabel("Value")
-    # plt.ylabel("Density")
-    # plt.legend()
-    # plt.savefig("saved/images/kde_outliers")
-    #
-    # print(f"Number of outliers detected: {len(outliers)}")
-    # print(f"Threshold : {threshold}")
+    print(f"Number of total data points: {len(anomaly_score)}")
+    print(f"threshold of anomaly score: ", threshold)

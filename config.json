@@ -12,13 +12,13 @@
     "data_loader": {
         "type": "TimeSeriesDataLoader",
         "args":{
-            "init_loader": false,
+            "init_loader": true,
             "data_dir": "datasets/open",
             "batch_size": 256,
             "shuffle": false,
             "validation_split": 0.0,
-            "window_size": 61,
-            "window_given": 60,
+            "window_size": 41,
+            "window_given": 40,
             "stride": 1
         }
     },
@@ -35,15 +35,15 @@
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
-            "step_size": 100,
-            "gamma": 0.01
+            "step_size": 10,
+            "gamma": 0.1
         }
     },
     "trainer": {
-        "epochs": 10,
+        "epochs": 5,
 
         "save_dir": "saved/",
-        "save_period": 2,
+        "save_period": 1,
         "verbosity": 2,
 
         "monitor": "min losses",
