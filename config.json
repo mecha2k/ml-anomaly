@@ -12,7 +12,6 @@
     "data_loader": {
         "type": "TimeSeriesDataLoader",
         "args":{
-            "init_loader": true,
             "data_dir": "datasets/open",
             "batch_size": 256,
             "shuffle": false,

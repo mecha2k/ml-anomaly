@@ -9,6 +9,8 @@ from pathlib import Path
 import torch
 import pickle
 
+drop_cols = ["B_2", "B_4", "B_1", "B_3", "A_2", "F_1", "D_1", "D_2", "C_5", "E_1", "E_2", "E_4", "C_2"]  # fmt: skip
+
 
 class TimeSeriesDataset(Dataset):
     def __init__(self, ts, df, stride=1, window_size=41, window_given=40):
@@ -43,11 +45,10 @@ class TimeSeriesDataLoader(BaseDataLoader):
         window_size=41,
         window_given=40,
         stride=10,
-        init_loader=False,
         training=True,
     ):
         self.data_dir = Path(data_dir)
-        self._init_dataloader(init_loader, stride, window_size, window_given)
+        self._init_dataloader(stride, window_size, window_given)
         self.dataset = self.train_dataset if training else self.test_dataset
 
         super().__init__(self.dataset, batch_size, shuffle, validation_split)
@@ -60,63 +61,44 @@ class TimeSeriesDataLoader(BaseDataLoader):
         is_nan = np.any(np.isnan(x))
         print(f"Any {mode} data over 1.0: {over_1}, below 0: {below_0}, none: {is_nan}")
 
-    def _init_dataloader(self, init_loader, stride, window_size, window_given):
-        if not init_loader:
-            self.train_df_raw = pd.read_pickle(self.data_dir / "train_raw.pkl")
-            self.train_df = pd.read_pickle(self.data_dir / "train.pkl")
-            self.test_df_raw = pd.read_pickle(self.data_dir / "test_raw.pkl")
-            self.test_df = pd.read_pickle(self.data_dir / "test.pkl")
-            with open(self.data_dir / "train_dataset.pkl", "rb") as f:
-                self.train_dataset = pickle.load(f)
-            with open(self.data_dir / "test_dataset.pkl", "rb") as f:
-                self.test_dataset = pickle.load(f)
+    def _init_dataloader(self, stride, window_size, window_given):
+        self.train_df_raw = pd.read_csv(self.data_dir / "train.csv")
+        columns_target = self.train_df_raw.columns.drop(["Timestamp", "anomaly"] + drop_cols)
+        train_df = self.train_df_raw[columns_target].astype(float)
 
-        else:
-            self.train_df_raw = pd.read_csv(self.data_dir / "train.csv")
-            self.train_df_raw.to_pickle(self.data_dir / "train_raw.pkl")
+        scaler = MinMaxScaler().fit(train_df)
+        train_ls = scaler.transform(train_df)
+        self.train_df = (
+            pd.DataFrame(train_ls, columns=train_df.columns, index=list(train_df.index.values))
+            .ewm(alpha=0.9)
+            .mean()
+        )
+        self.train_df.to_pickle(self.data_dir / "train.pkl")
 
-            columns_target = self.train_df_raw.columns.drop(["Timestamp", "anomaly"])
-            train_df = self.train_df_raw[columns_target].astype(float)
+        self.test_df_raw = pd.read_csv(self.data_dir / "test.csv")
+        test_df = self.test_df_raw[columns_target].astype(float)
+        test_ls = scaler.transform(test_df)
+        self.test_df = (
+            pd.DataFrame(test_ls, columns=test_df.columns, index=list(test_df.index.values))
+            .ewm(alpha=0.9)
+            .mean()
+        )
+        self.test_df.to_pickle(self.data_dir / "test.pkl")
 
-            scaler = MinMaxScaler().fit(train_df)
-            train_ls = scaler.transform(train_df)
-            self.train_df = (
-                pd.DataFrame(train_ls, columns=train_df.columns, index=list(train_df.index.values))
-                .ewm(alpha=0.9)
-                .mean()
-            )
-            self.train_df.to_pickle(self.data_dir / "train.pkl")
+        self._check_dataframe(self.train_df, mode="train")
+        self._check_dataframe(self.test_df, mode="test")
 
-            self.test_df_raw = pd.read_csv(self.data_dir / "test.csv")
-            self.test_df_raw.to_pickle(self.data_dir / "test_raw.pkl")
-
-            test_df = self.test_df_raw[columns_target].astype(float)
-            test_ls = scaler.transform(test_df)
-            self.test_df = (
-                pd.DataFrame(test_ls, columns=test_df.columns, index=list(test_df.index.values))
-                .ewm(alpha=0.9)
-                .mean()
-            )
-            self.test_df.to_pickle(self.data_dir / "test.pkl")
-
-            self._check_dataframe(self.train_df, mode="train")
-            self._check_dataframe(self.test_df, mode="test")
-
-            self.train_dataset = TimeSeriesDataset(
-                self.train_df_raw["Timestamp"],
-                self.train_df,
-                stride=stride,
-                window_size=window_size,
-                window_given=window_given,
-            )
-            self.test_dataset = TimeSeriesDataset(
-                self.test_df_raw["Timestamp"],
-                self.test_df,
-                stride=stride,
-                window_size=window_size,
-                window_given=window_given,
-            )
-            with open(self.data_dir / "train_dataset.pkl", "wb") as f:
-                pickle.dump(self.train_dataset, f)
-            with open(self.data_dir / "test_dataset.pkl", "wb") as f:
-                pickle.dump(self.test_dataset, f)
+        self.train_dataset = TimeSeriesDataset(
+            self.train_df_raw["Timestamp"],
+            self.train_df,
+            stride=stride,
+            window_size=window_size,
+            window_given=window_given,
+        )
+        self.test_dataset = TimeSeriesDataset(
+            self.test_df_raw["Timestamp"],
+            self.test_df,
+            stride=stride,
+            window_size=window_size,
+            window_given=window_given,
+        )
