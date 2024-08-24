@@ -5,7 +5,6 @@ import torch
 import datetime
 import pickle
 from scipy import stats
-from sqlalchemy.dialects.mssql.information_schema import columns
 from tqdm import tqdm
 from pathlib import Path
 
@@ -134,10 +133,6 @@ def final_submission(model, data_loader, device, data_path):
     prediction[anomaly_score > threshold] = 1
     check_graphs(anomaly_score, prediction, threshold=threshold, name=image_path / "test_anomaly")
 
-    # test_df = pd.read_pickle(data_path / "test.pkl")
-    # for columns in test_df.columns.values:
-    #     check_graphs(test_df[columns].values, prediction, name=image_path / f"{columns}_test_preds")
-
     sample_submission = pd.read_csv(data_path / "sample_submission.csv")
     sample_submission["anomaly"] = prediction
     sample_submission.to_csv(data_path / "final_submission.csv", encoding="UTF-8-sig", index=False)
@@ -146,6 +141,8 @@ def final_submission(model, data_loader, device, data_path):
 
 if __name__ == "__main__":
     data_path = Path("datasets/open")
+    image_path = Path("saved/images")
+
     with open(data_path / "test_anomaly.pkl", "rb") as f:
         data_dict = pickle.load(f)
 
