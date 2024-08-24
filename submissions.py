@@ -116,13 +116,14 @@ def final_submission(model, data_loader, device, data_path):
     timestamps, distances = inference(model, data_loader, device=device)
     anomaly_score = np.mean(distances, axis=1)
     attacks = np.zeros_like(anomaly_score)
+    timestamps_raw = data_loader.test_df_raw["Timestamp"]
 
     with open(data_path / "test_anomaly.pkl", "wb") as f:
         data_dict = {
             "timestamps": timestamps,
             "anomaly_score": anomaly_score,
             "attacks": attacks,
-            "timestamps_raw": data_loader.test_df_raw["Timestamp"],
+            "timestamps_raw": timestamps_raw,
         }
         pickle.dump(data_dict, f)
 

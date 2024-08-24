@@ -23,7 +23,6 @@ def get_data_loader(config, training=True):
         window_size=config["data_loader"]["args"]["window_size"],
         window_given=config["data_loader"]["args"]["window_given"],
         stride=config["data_loader"]["args"]["stride"],
-        init_loader=False,
     )
 
 
