@@ -5,6 +5,7 @@ import torch
 import datetime
 import pickle
 from scipy import stats
+from sqlalchemy.dialects.mssql.information_schema import columns
 from tqdm import tqdm
 from pathlib import Path
 
@@ -24,6 +25,7 @@ def check_graph(xs, att, piece=2, threshold=None, name="default"):
             axs[i].plot(xticks, att[L:R] * peak)
         if threshold is not None:
             axs[i].axhline(y=threshold, color="r")
+    plt.tight_layout()
     plt.savefig(name)
 
 
@@ -94,11 +96,12 @@ def final_submission(model, data_loader, device, data_path):
             "timestamps": timestamps,
             "anomaly_score": anomaly_score,
             "attacks": attacks,
+            "timestamps_raw": data_loader.test_df_raw["Timestamp"],
         }
         pickle.dump(data_dict, f)
 
-    threshold = get_threshold(anomaly_score, percentile=95)
-    print(f"95% percentile based Threshold: {threshold}")
+    threshold = get_threshold(anomaly_score, percentile=90)
+    print(f"Percentile based Threshold: {threshold}")
     check_graph(
         anomaly_score, attacks, piece=2, threshold=threshold, name=data_path / "test_anomaly"
     )
@@ -114,11 +117,92 @@ def final_submission(model, data_loader, device, data_path):
 
 
 if __name__ == "__main__":
-    with open("datasets/open/test_anomaly.pkl", "rb") as f:
+    data_path = Path("datasets/open")
+    with open(data_path / "test_anomaly.pkl", "rb") as f:
         data_dict = pickle.load(f)
 
+    attacks = data_dict["attacks"]
+    timestamps = data_dict["timestamps"]
+    timestamps_raw = data_dict["timestamps_raw"]
     anomaly_score = data_dict["anomaly_score"]
-    threshold = get_threshold(anomaly_score, percentile=95)
+    threshold = get_threshold(anomaly_score[:20000], percentile=95)
+
+    print(f"Percentile based Threshold: {threshold}")
+    check_graph(
+        anomaly_score[:20000],
+        np.zeros_like(anomaly_score),
+        piece=2,
+        threshold=threshold,
+        name="saved/images/test_anomaly",
+    )
+
+    # labels = put_labels(anomaly_score, threshold)
+    # prediction = fill_blank(timestamps, labels, np.array(timestamps_raw))
+    # prediction = prediction.flatten().tolist()
+    #
+    # sample_submission = pd.read_csv(data_path / "sample_submission.csv")
+    # sample_submission["anomaly"] = prediction
+    # sample_submission.to_csv(data_path / "final_submission.csv", encoding="UTF-8-sig", index=False)
+    # print(sample_submission["anomaly"].value_counts())
+    #
+    # amin = np.percentile(anomaly_score, 5)
+    # amax = np.percentile(anomaly_score, 95)
+    # plt.hist(anomaly_score, bins=100, density=True, range=(amin, amax + 0.1))
+    # plt.legend(["Anomaly score"])
+    # plt.grid()
+    # plt.savefig("saved/images/anomaly_hist")
+    #
+    # print(f"Number of total data points: {len(anomaly_score)}")
+    # print(f"threshold of anomaly score: ", threshold)
+    #
+    # train_df = pd.read_pickle(data_path / "train.pkl")
+    # train_df_corr = train_df.corr()
+    # for col in train_df.columns:
+    #     print("========================================")
+    #     print(train_df_corr[col][0.7 < train_df_corr[col]])
+    #     print("========================================")
+    #
+    # drop_cols = [
+    #     "B_2",
+    #     "B_4",
+    #     "B_1",
+    #     "B_3",
+    #     "A_2",
+    #     "F_1",
+    #     "D_1",
+    #     "D_2",
+    #     "C_5",
+    #     "E_1",
+    #     "E_2",
+    #     "E_4",
+    #     "C_2",
+    # ]
+    # print(tuple(drop_cols))
+    # train_df = train_df.drop(columns=drop_cols)
+
+    # cols_name = ["A", "B", "C", "D", "E", "F"]
+    # for col in cols_name:
+    #     columns = [c for c in train_df.columns if c.startswith(col)]
+    #     correlations = train_df[columns].corr()
+    #     plt.figure(figsize=(12, 12))
+    #     plt.title(f"Correlation Heatmap {col}")
+    #     plt.imshow(correlations, cmap="coolwarm", interpolation="nearest")
+    #     plt.colorbar()
+    #     plt.xticks(range(len(columns)), columns, rotation=90)
+    #     plt.yticks(range(len(columns)), columns)
+    #     plt.savefig(f"saved/images/corr_{col}_col")
+
+    # cols_name = ["A", "B", "C", "D", "E", "F"]
+    # for col in cols_name:
+    #     columns = [c for c in train_df.columns if c.startswith(col)]
+    #     plt.figure(figsize=(24, 12))
+    #     plt.plot(train_df[columns])
+    #     plt.title(f"Train Data {col}")
+    #     plt.xlabel("Index")
+    #     plt.ylabel("Value")
+    #     plt.grid()
+    #     plt.legend()
+    #     plt.savefig(f"saved/images/train_{col}_col")
 
     # anomaly_sampled = np.random.choice(anomaly_score, size=500, replace=False)
     # kde = stats.gaussian_kde(anomaly_sampled)
@@ -140,22 +224,3 @@ if __name__ == "__main__":
     # plt.grid()
     # plt.legend()
     # plt.savefig("saved/images/kde_outliers")
-
-    print(f"95% percentile based Threshold: {threshold}")
-    check_graph(
-        anomaly_score,
-        np.zeros_like(anomaly_score),
-        piece=2,
-        threshold=threshold,
-        name="saved/images/test_anomaly",
-    )
-
-    amin = np.percentile(anomaly_score, 5)
-    amax = np.percentile(anomaly_score, 95)
-    plt.hist(anomaly_score, bins=100, density=True, range=(amin, amax + 0.1))
-    plt.legend(["Anomaly score"])
-    plt.grid()
-    plt.savefig("saved/images/anomaly_hist")
-
-    print(f"Number of total data points: {len(anomaly_score)}")
-    print(f"threshold of anomaly score: ", threshold)
