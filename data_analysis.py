@@ -25,7 +25,7 @@ def check_graphs_v1(data, preds, threshold=None, name="default", piece=15):
     plt.close("all")
 
 
-def check_graphs_v2(data, preds, interval=10000, img_path=None):
+def check_graphs_v2(data, preds, interval=10000, img_path=None, mode="train"):
     pieces = int(len(data) // interval)
     for i in range(pieces):
         start = i * interval
@@ -38,7 +38,7 @@ def check_graphs_v2(data, preds, interval=10000, img_path=None):
         plt.grid()
         plt.plot(values)
         plt.plot(preds[start:end], color="green", linewidth=8)
-        plt.savefig(img_path / "raw_data" / f"raw_{i+1:02d}_pages")
+        plt.savefig(img_path / f"{mode}_raw_data" / f"raw_{i+1:02d}_pages")
         plt.close("all")
 
 
@@ -80,8 +80,11 @@ if __name__ == "__main__":
     prediction[anomaly_score > threshold] = 1
     check_graphs_v1(anomaly_score, prediction, threshold, name=image_path / "test_anomaly")
 
+    # train_df = pd.read_pickle(data_path / "train.pkl")
+    # train = train_df.values
+    # check_graphs_v2(train, np.zeros_like(train), img_path=image_path, mode="train")
     test_df = pd.read_pickle(data_path / "test.pkl")
-    check_graphs_v2(test_df.values, prediction, img_path=image_path)
+    check_graphs_v2(test_df.values, prediction, img_path=image_path, mode="test")
 
     sample_submission = pd.read_csv(data_path / "sample_submission.csv")
     sample_submission["anomaly"] = prediction
