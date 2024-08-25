@@ -9,7 +9,7 @@ from datetime import datetime
 from submissions import put_labels
 
 
-def check_graphs(data, preds, piece=15, threshold=None, name="default"):
+def check_graphs_v1(data, preds, threshold=None, name="default", piece=15):
     interval = len(data) // piece
     fig, axes = plt.subplots(piece, figsize=(20, 4 * piece))
     for i in range(piece):
@@ -26,42 +26,20 @@ def check_graphs(data, preds, piece=15, threshold=None, name="default"):
     plt.close("all")
 
 
-def plot_raw_data(data, interval=10000, img_path=None):
-    nplots = 3
+def check_graphs_v2(data, preds, interval=10000, img_path=None):
     pieces = int(len(data) // interval)
-    # for i in range(int(pieces / nplots)):
-    #     fig, axes = plt.subplots(nplots, figsize=(20, 4 * nplots))
-    #     fig.subplots_adjust(hspace=10)
-    #     for j in range(nplots):
-    #         start = (i * nplots + j) * interval
-    #         end = min(start + interval, len(data))
-    #         xticks = range(start, end, 1000)
-    #         values = data[start:end]
-    #         axes[j].set_ylim(values.min(), values.max())
-    #         axes[j].set_xticks(xticks)
-    #         axes[j].legend(f"index {start:,}-{end:,}")
-    #         axes[j].grid()
-    #         axes[j].plot(values)
-    #     plt.tight_layout()
-    #     plt.savefig(img_path / "raw_data" / f"raw_{i:02d}_pages")
-    #     print(f"Saved {img_path / 'raw_data' / f'raw_{i:02d}_pages'}")
-    #     plt.close("all")
     for i in range(pieces):
         start = i * interval
         end = min(start + interval, len(data))
         xticks = list(range(start, end, 1000))
         values = data[start:end]
         plt.figure(figsize=(16, 8))
-        plt.ylim(values.min(), values.max())
+        plt.ylim(-0.5, 1.5)
         plt.xticks(xticks)
-        plt.xlabel("Time")
-        plt.ylabel("Values")
         plt.grid()
         plt.plot(values)
+        plt.plot(preds[start:end], color="green", linewidth=8)
         plt.savefig(img_path / "raw_data" / f"raw_{i+1:02d}_pages")
-        print(f"Saved {img_path / 'raw_data' / f'raw_{i+1:02d}_pages'}")
-        plt.cla()
-        plt.clf()
         plt.close("all")
 
 
@@ -97,18 +75,17 @@ if __name__ == "__main__":
     timestamps_raw = data_dict["timestamps_raw"]
     anomaly_score = data_dict["anomaly_score"]
 
-    threshold = np.percentile(anomaly_score, 99)
+    threshold = np.percentile(anomaly_score, 95)
     anomaly_score = fill_blank_data(timestamps, anomaly_score, np.array(timestamps_raw))
     prediction = np.zeros_like(anomaly_score)
     prediction[anomaly_score > threshold] = 1
     mean_std, percentile = anomaly_prediction(anomaly_score, piece=15)
-    check_graphs(anomaly_score, prediction, threshold=threshold, name=image_path / "test_anomaly")
+    check_graphs_v1(anomaly_score, prediction, threshold, name=image_path / "test_anomaly")
 
     test_df = pd.read_pickle(data_path / "test.pkl")
-    test_df = test_df[:60000]
-    plot_raw_data(test_df.values, img_path=image_path)
+    check_graphs_v2(test_df.values, prediction, img_path=image_path)
 
-    # for columns in test_df.columns.values:
-    #     check_graphs(
-    #         test_df[columns].values, prediction, name=image_path / "preds" / f"{columns}_test_preds"
-    #     )
+    sample_submission = pd.read_csv(data_path / "sample_submission.csv")
+    sample_submission["anomaly"] = prediction
+    sample_submission.to_csv(data_path / "final_submission.csv", encoding="UTF-8-sig", index=False)
+    print(sample_submission["anomaly"].value_counts())
