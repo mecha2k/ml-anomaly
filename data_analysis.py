@@ -6,7 +6,6 @@ import pickle
 
 from pathlib import Path
 from datetime import datetime
-from submissions import put_labels
 
 
 def check_graphs_v1(data, preds, threshold=None, name="default", piece=15):
@@ -79,7 +78,6 @@ if __name__ == "__main__":
     anomaly_score = fill_blank_data(timestamps, anomaly_score, np.array(timestamps_raw))
     prediction = np.zeros_like(anomaly_score)
     prediction[anomaly_score > threshold] = 1
-    mean_std, percentile = anomaly_prediction(anomaly_score, piece=15)
     check_graphs_v1(anomaly_score, prediction, threshold, name=image_path / "test_anomaly")
 
     test_df = pd.read_pickle(data_path / "test.pkl")
