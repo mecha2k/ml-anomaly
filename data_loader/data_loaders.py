@@ -9,7 +9,8 @@ from pathlib import Path
 import torch
 import pickle
 
-drop_cols = ["B_2", "B_4", "B_1", "B_3", "A_2", "F_1", "D_1", "D_2", "C_5", "E_1", "E_2", "E_4", "C_2"]  # fmt: skip
+# drop_cols = ["B_2", "B_4", "B_1", "B_3", "A_2", "F_1", "D_1", "D_2", "C_5", "E_1", "E_2", "E_4", "C_2"]  # fmt: skip
+drop_cols = []
 
 
 class TimeSeriesDataset(Dataset):

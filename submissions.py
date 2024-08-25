@@ -128,7 +128,9 @@ def final_submission(model, data_loader, device, data_path):
         pickle.dump(data_dict, f)
 
     image_path = Path("saved/images")
-    threshold = np.percentile(anomaly_score, 99)
+    # threshold = np.percentile(anomaly_score, 99)
+    threshold = np.mean(anomaly_score) + 2 * np.std(anomaly_score)
+    print(f"mean-std based Threshold: {threshold}")
     anomaly_score = fill_blank_data(timestamps, anomaly_score, np.array(timestamps_raw))
     prediction = np.zeros_like(anomaly_score)
     prediction[anomaly_score > threshold] = 1

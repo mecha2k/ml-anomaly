@@ -1,12 +1,13 @@
 {
-    "name": "StackedLSTM",
+    "name": "LSTM_autoencoder",
     "n_gpu": 1,
 
     "arch": {
-        "type": "StackedLSTM",
+        "type": "GRU_Linear",
         "args": {
-            "n_hiddens": 200,
-            "n_layers": 5
+            "n_hiddens": 150,
+            "n_hiddens_2": 70,
+            "n_layers": 3
         }
     },
     "data_loader": {
@@ -34,8 +35,8 @@
     "lr_scheduler": {
         "type": "StepLR",
         "args": {
-            "step_size": 10,
-            "gamma": 0.1
+            "step_size": 100,
+            "gamma": 0.01
         }
     },
     "trainer": {
@@ -46,7 +47,7 @@
         "verbosity": 2,
 
         "monitor": "min losses",
-        "early_stop": 100,
+        "early_stop": 10000,
 
         "tensorboard": true
     }
