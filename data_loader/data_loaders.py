@@ -1,13 +1,14 @@
+import numpy as np
+import pandas as pd
+import torch
+import pickle
+
+from sympy.core.random import shuffle
 from torchvision import datasets, transforms
 from torch.utils.data import Dataset
 from base import BaseDataLoader
-
-import numpy as np
-import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from pathlib import Path
-import torch
-import pickle
 
 # drop_cols = ["B_2", "B_4", "B_1", "B_3", "A_2", "F_1", "D_1", "D_2", "C_5", "E_1", "E_2", "E_4", "C_2"]  # fmt: skip
 drop_cols = []
@@ -103,3 +104,66 @@ class TimeSeriesDataLoader(BaseDataLoader):
             window_size=window_size,
             window_given=window_given,
         )
+
+
+class HMCDataset(Dataset):
+    def __init__(self, data, win_size=100, step=1, mode="train"):
+        self.data = data
+        self.mode = mode
+        self.win_size = win_size
+        self.step = step
+
+    def __len__(self):
+        if self.mode == "train" or self.mode == "test":
+            return (self.data.shape[0] - self.win_size) // self.step + 1
+        else:
+            return (self.data.shape[0] - self.win_size) // self.win_size + 1
+
+    def __getitem__(self, index):
+        index = index * self.step
+        return np.float32(self.data[index : index + self.win_size])
+
+
+class HMCDataLoader(BaseDataLoader):
+    def __init__(
+        self,
+        data_dir,
+        batch_size,
+        win_size=100,
+        training=True,
+    ):
+        data_path = Path(data_dir)
+        self.scaler = MinMaxScaler()
+
+        train_df_raw = pd.read_csv(data_path / "train.csv")
+        train_df_raw = train_df_raw[:1000]
+        data_columns = train_df_raw.columns.drop(["Timestamp", "anomaly"])
+        train_df = train_df_raw[data_columns].astype(float)
+        scaler = self.scaler.fit(train_df)
+        train = scaler.transform(train_df)
+        train_df = pd.DataFrame(train, columns=train_df.columns, index=list(train_df.index.values))
+        train_df = train_df.ewm(alpha=0.9).mean()
+        train_df.to_pickle(data_path / "train.pkl")
+
+        test_df_raw = pd.read_csv(data_path / "test.csv")
+        test_df_raw = test_df_raw[:1000]
+        test_df = test_df_raw[data_columns].astype(float)
+        test = scaler.transform(test_df)
+        test_df = pd.DataFrame(test, columns=test_df.columns, index=list(test_df.index.values))
+        test_df = test_df.ewm(alpha=0.9).mean()
+        test_df.to_pickle(data_path / "test.pkl")
+
+        self.train_df = train_df
+        self.test_df = test_df
+        self.test_timestamps = test_df_raw["Timestamp"]
+        self.train = np.array(train_df.values)
+        self.test = np.array(test_df.values)
+
+        if training:
+            shuffle = True
+            self.dataset = HMCDataset(self.train, win_size, 1, "train")
+        else:
+            shuffle = False
+            self.dataset = HMCDataset(self.test, win_size, 1, "test")
+
+        super().__init__(self.dataset, batch_size, shuffle, validation_split=0.0)

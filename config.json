@@ -1,25 +1,21 @@
 {
-    "name": "LSTM_autoencoder",
+    "name": "AnomalyTransformer",
     "n_gpu": 1,
 
     "arch": {
-        "type": "GRU_Linear",
+        "type": "AnomalyTransformer",
         "args": {
-            "n_hiddens": 150,
-            "n_hiddens_2": 70,
-            "n_layers": 3
+            "enc_in": 51,
+            "c_out": 51,
+            "win_size": 100
         }
     },
     "data_loader": {
-        "type": "TimeSeriesDataLoader",
+        "type": "HMCDataLoader",
         "args":{
             "data_dir": "datasets/open",
             "batch_size": 256,
-            "shuffle": false,
-            "validation_split": 0.0,
-            "window_size": 41,
-            "window_given": 40,
-            "stride": 1
+            "win_size": 100
         }
     },
     "optimizer": {
@@ -41,6 +37,7 @@
     },
     "trainer": {
         "epochs": 5,
+        "anomaly_ratio": 5,
 
         "save_dir": "saved/",
         "save_period": 1,

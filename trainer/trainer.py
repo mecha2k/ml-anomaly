@@ -57,8 +57,10 @@ class Trainer(BaseTrainer):
         self.train_metrics.reset()
 
         for batch_idx, dataset in enumerate(self.data_loader):
-            inputs = dataset["input"].to(self.device)
-            targets = dataset["target"].to(self.device)
+            # inputs = dataset["input"].to(self.device)
+            # targets = dataset["target"].to(self.device)
+            inputs = dataset
+            targets = torch.zeros_like(inputs)
 
             self.optimizer.zero_grad()
             outputs = self.model(inputs)

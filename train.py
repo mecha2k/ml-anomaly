@@ -11,7 +11,6 @@ from trainer import Trainer
 from utils import prepare_device
 
 
-# fix random seeds for reproducibility
 SEED = 42
 torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
@@ -27,7 +26,8 @@ def main(config):
     valid_data_loader = data_loader.split_validation()
 
     # build model architecture, then print to console
-    model = config.init_obj("arch", module_arch, input_size=data_loader.train_df.shape[1])
+    model = config.init_obj("arch", module_arch)
+    # model = config.init_obj("arch", module_arch, input_size=data_loader.train_df.shape[1])
     logger.info(model)
 
     # prepare for (multi-device) GPU training
