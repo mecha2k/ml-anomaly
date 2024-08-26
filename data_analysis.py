@@ -45,7 +45,7 @@ def check_graphs_v2(data, preds, anomaly, interval=10000, img_path=None, mode="t
 
 def fill_blank_data(timestamps, datasets, total_ts):
     # create dataframes with total_ts index and 0 values
-    df_total = pd.DataFrame(0, index=total_ts, columns=["outputs"])
+    df_total = pd.DataFrame(0, index=total_ts, columns=["outputs"]).astype(float)
     df_total.index = pd.to_datetime(df_total.index)
     df_partial = pd.DataFrame(datasets, index=timestamps, columns=["outputs"])
     df_partial.index = pd.to_datetime(df_partial.index)
