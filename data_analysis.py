@@ -25,7 +25,7 @@ def check_graphs_v1(data, preds, threshold=None, name="default", piece=15):
     plt.close("all")
 
 
-def check_graphs_v2(data, preds, interval=10000, img_path=None, mode="train"):
+def check_graphs_v2(data, preds, anomaly, interval=10000, img_path=None, mode="train"):
     pieces = int(len(data) // interval)
     for i in range(pieces):
         start = i * interval
@@ -38,13 +38,14 @@ def check_graphs_v2(data, preds, interval=10000, img_path=None, mode="train"):
         plt.grid()
         plt.plot(values)
         plt.plot(preds[start:end], color="green", linewidth=8)
+        plt.plot(anomaly[start:end], color="blue", linewidth=5)
         plt.savefig(img_path / f"{mode}_raw_data" / f"raw_{i+1:02d}_pages")
         plt.close("all")
 
 
 def fill_blank_data(timestamps, datasets, total_ts):
     # create dataframes with total_ts index and 0 values
-    df_total = pd.DataFrame(0, index=total_ts, columns=["outputs"])
+    df_total = pd.DataFrame(0, index=total_ts, columns=["outputs"]).astype(float)
     df_total.index = pd.to_datetime(df_total.index)
     df_partial = pd.DataFrame(datasets, index=timestamps, columns=["outputs"])
     df_partial.index = pd.to_datetime(df_partial.index)
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     # train = train_df.values
     # check_graphs_v2(train, np.zeros_like(train), img_path=image_path, mode="train")
     test_df = pd.read_pickle(data_path / "test.pkl")
-    check_graphs_v2(test_df.values, prediction, img_path=image_path, mode="test")
+    check_graphs_v2(test_df.values, prediction, anomaly_score, img_path=image_path, mode="test")
 
     sample_submission = pd.read_csv(data_path / "sample_submission.csv")
     sample_submission["anomaly"] = prediction

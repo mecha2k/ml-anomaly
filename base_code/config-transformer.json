@@ -1,0 +1,51 @@
+{
+    "name": "AnomalyTransformer",
+    "n_gpu": 1,
+
+    "arch": {
+        "type": "AnomalyTransformer",
+        "args": {
+            "enc_in": 51,
+            "c_out": 51,
+            "win_size": 100
+        }
+    },
+    "data_loader": {
+        "type": "HMCDataLoader",
+        "args":{
+            "data_dir": "datasets/open",
+            "batch_size": 256,
+            "win_size": 100
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 1e-5,
+            "weight_decay": 0,
+            "amsgrad": false
+        }
+    },
+    "loss": "mse_loss",
+    "metrics": ["losses"],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 100,
+            "gamma": 0.01
+        }
+    },
+    "trainer": {
+        "epochs": 5,
+        "anomaly_ratio": 5,
+
+        "save_dir": "saved/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min losses",
+        "early_stop": 10000,
+
+        "tensorboard": true
+    }
+}

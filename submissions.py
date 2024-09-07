@@ -104,7 +104,7 @@ def check_graphs(data, preds, piece=15, threshold=None, name="default"):
 
 def fill_blank_data(timestamps, datasets, total_ts):
     # create dataframes with total_ts index and 0 values
-    df_total = pd.DataFrame(0, index=total_ts, columns=["outputs"])
+    df_total = pd.DataFrame(0, index=total_ts, columns=["outputs"]).astype(float)
     df_total.index = pd.to_datetime(df_total.index)
     df_partial = pd.DataFrame(datasets, index=timestamps, columns=["outputs"])
     df_partial.index = pd.to_datetime(df_partial.index)
@@ -154,19 +154,12 @@ if __name__ == "__main__":
     timestamps_raw = data_dict["timestamps_raw"]
     anomaly_score = data_dict["anomaly_score"]
 
-    intervals = 20000
-    steps = len(anomaly_score) // intervals
-
-    threshold = get_threshold(anomaly_score[:20000], percentile=95)
-
-    print(f"Percentile based Threshold: {threshold}")
-    check_graph(
-        anomaly_score[:20000],
-        np.zeros_like(anomaly_score),
-        piece=2,
-        threshold=threshold,
-        name="saved/images/test_anomaly",
-    )
+    threshold = np.mean(anomaly_score) + 2 * np.std(anomaly_score)
+    print(f"mean-std based Threshold: {threshold}")
+    anomaly_score = fill_blank_data(timestamps, anomaly_score, np.array(timestamps_raw))
+    prediction = np.zeros_like(anomaly_score)
+    prediction[anomaly_score > threshold] = 1
+    check_graphs(anomaly_score, prediction, threshold=threshold, name=image_path / "test_anomaly")
 
     # labels = put_labels(anomaly_score, threshold)
     # prediction = fill_blank(timestamps, labels, np.array(timestamps_raw))
