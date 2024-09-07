@@ -16,10 +16,10 @@ from tqdm import tqdm
 from pathlib import Path
 
 
-epochs = 1
+epochs = 5
 batch_size = 1024
 learning_rate = 1e-5
-stride = 10
+stride = 1
 window_size = 41
 window_given = 40
 
@@ -27,7 +27,7 @@ n_layers = 3
 n_hiddens = 150
 n_hiddens_2 = 70
 
-load_from_pickle = True
+load_from_pickle = False
 
 
 def seed_everything(seed=42):
